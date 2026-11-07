@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+<meta name="description" content="Calculadora de Métodos Numéricos — Bisección y Secante — ITFIP UniEspinal"/>
+<meta name="author" content="Dominyk Savino Rodriguez · Johan Villalba Sarmiento"/>
+<title>Métodos Numéricos | ITFIP UniEspinal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* Fórmulas de métodos: pasos claros y apilados, legibles en móvil y escritorio. */
+.formula-box.formula-steps { display:grid; gap:10px; padding:0; border:0; background:transparent; color:inherit; white-space:normal; box-shadow:none; }
+.formula-step { min-width:0; padding:11px 12px; border:1px solid var(--bd); border-left:3px solid var(--acc); border-radius:10px; background:var(--s2); }
+.formula-step-title { display:block; margin-bottom:7px; color:var(--mut); font:700 10px 'Space Mono',monospace; letter-spacing:.8px; text-transform:uppercase; }
+.formula-expression { color:var(--acc); font:500 13px/1.7 'Space Mono',monospace; overflow-wrap:anywhere; }
+.formula-conditions { display:grid; gap:7px; }
+.formula-condition { display:grid; grid-template-columns:24px minmax(0,1fr); align-items:start; gap:7px; color:var(--mu2); font-size:12px; line-height:1.55; }
+.formula-condition-mark { display:grid; width:22px; height:22px; place-items:center; border-radius:6px; background:var(--acc-soft); color:var(--acc); font:700 11px 'Space Mono',monospace; }
+.formula-condition code { color:var(--txt); font:500 12px/1.6 'Space Mono',monospace; overflow-wrap:anywhere; white-space:normal; }
+.formula-fraction { display:inline-grid; vertical-align:middle; grid-template-rows:auto auto; margin:0 3px; text-align:center; line-height:1.35; }
+.formula-fraction span:first-child { padding:0 4px 3px; border-bottom:1px solid currentColor; }
+.formula-fraction span:last-child { padding:3px 4px 0; }
+.formula-error { border-left-color:var(--yel); }
+.formula-error .formula-expression { color:var(--yel); }
+@media(max-width:650px) { .formula-step { padding:10px; } .formula-expression,.formula-condition code { font-size:11px; } }
+/* ═══════════════════════════════════════
+   RESET & VARIABLES
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+
+:root {
+  --bg:    #0b1018;
+  --s1:    #111923;
+  --s2:    #17212d;
+  --s3:    #202c39;
+  --bd:    rgba(226,232,240,0.09);
+  --bd2:   rgba(226,232,240,0.16);
+  --acc:   #28b8a6;
+  --yel:   #e4ad37;
+  --red:   #e87979;
+  --pur:   #a58add;
+  --on-acc:#071a18;
+  --grid-line:rgba(40,184,166,.012);
+  --halo:rgba(40,184,166,.032);
+  --card-shadow:0 4px 18px rgba(0,0,0,.24);
+  --acc-soft:rgba(40,184,166,.10);
+  --acc-border:rgba(40,184,166,.28);
+  --warn-soft:rgba(228,173,55,.08);
+  --warn-border:rgba(228,173,55,.24);
+  --chart-bis:#28b8a6;
+  --chart-sec:#a58add;
+  --chart-iter:#e4ad37;
+  --txt:   #e2e8f0;
+  --mut:   #8997a8;
+  --mu2:   #94a3b8;
+  --r16:   16px;
+  --r12:   12px;
+  --r8:    8px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg:#f4f6f8; --s1:#ffffff; --s2:#f8fafc; --s3:#edf1f5;
+  --bd:#dde3ec; --bd2:#c9d3e0;
+  --txt:#172033; --mut:#526174; --mu2:#334155;
+  --acc:#0f766e; --yel:#9a5b08; --red:#b4232f; --pur:#6b43ad;
+  --on-acc:#ffffff;
+  --grid-line:rgba(15,118,110,.018);
+  --halo:rgba(15,118,110,.018);
+  --card-shadow:0 3px 12px rgba(15,23,42,.055);
+  --acc-soft:rgba(15,118,110,.08);
+  --acc-border:rgba(15,118,110,.24);
+  --warn-soft:rgba(154,91,8,.07);
+  --warn-border:rgba(154,91,8,.22);
+  --chart-bis:#0f766e;
+  --chart-sec:#6b43ad;
+  --chart-iter:#9a5b08;
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+body::after {
+  content: '';
+  position: fixed; top: -160px; left: 50%; transform: translateX(-50%);
+  width: min(600px,100vw); height: 320px;
+  background: radial-gradient(ellipse, var(--halo) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+.page {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 12px 64px;
+}
+
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+.hdr {
+  text-align: center;
+  padding: 6px 0 24px;
+  animation: sD .5s ease both;
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--acc-soft);
+  border: 1px solid var(--acc-border);
+  color: var(--acc);
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 4px 12px; border-radius: 100px; margin-bottom: 12px;
+}
+
+h1 {
+  font-size: clamp(20px,6vw,44px);
+  font-weight: 800; letter-spacing: -1.2px; line-height: 1.06;
+  background: linear-gradient(150deg, #fff 20%, var(--acc) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+:root[data-theme="light"] h1 { background-image:linear-gradient(150deg,#0f172a 20%,#0f766e 100%); }
+
+.hsub {
+  font-size: clamp(11px,2.5vw,13px);
+  color: var(--mut); margin-top: 8px; font-weight: 300;
+}
+
+/* ═══════════════════════════════════════
+   TABS
+═══════════════════════════════════════ */
+.tab-bar {
+  display: flex; gap: 4px;
+  background: var(--s1); border: 1px solid var(--bd);
+  border-radius: var(--r16); padding: 5px;
+  margin-bottom: 20px;
+  animation: fU .4s .1s ease both;
+}
+.method-tabs { display:flex; flex:1; min-width:0; gap:4px; }
+.tab-actions { display:flex; align-items:center; gap:6px; padding:0 3px; }
+.tab-utility { flex:0 0 auto; min-height:42px; border:1px solid var(--bd2); border-radius:999px; padding:8px 11px; background:var(--s2); color:var(--mu2); font:600 12px 'Outfit',sans-serif; cursor:pointer; white-space:nowrap; transition:all .2s; }
+.tab-utility:hover { border-color:var(--acc); color:var(--acc); }
+.tab-utility:focus-visible,.tbtn:focus-visible,button:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+
+.tbtn {
+  flex: 1; background: transparent; border: none;
+  min-height:42px;
+  color: var(--mut);
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(12px,3vw,15px); font-weight: 600;
+  padding: 10px 6px; border-radius: 11px;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.tbtn.active {
+  background: var(--acc); color: var(--on-acc);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--acc) 16%, transparent);
+}
+
+.tbtn:not(.active):hover { background: var(--s2); color: var(--txt); }
+
+.tpanel { display: none; }
+.tpanel.active { display: block; animation: fU .3s ease both; }
+
+/* ═══════════════════════════════════════
+   CARD
+═══════════════════════════════════════ */
+.card {
+  background: var(--s1); border: 1px solid var(--bd);
+  border-radius: var(--r16); padding: 18px;
+  box-shadow: var(--card-shadow);
+}
+
+.ch { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.cd { width: 6px; height: 20px; background: var(--acc); border-radius: 3px; flex-shrink: 0; }
+.cd.y { background: var(--yel); }
+.cd.r { background: var(--red); }
+.cd.p { background: var(--pur); }
+.ct { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--mu2); }
+
+/* ═══════════════════════════════════════
+   FIELDS
+═══════════════════════════════════════ */
+.field { margin-bottom: 12px; }
+.field-help { display:block; margin-top:6px; color:var(--mut); font-size:11px; line-height:1.45; }
+
+.fl { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.fn { font-size: 12px; font-weight: 700; color: var(--mu2); text-transform: uppercase; letter-spacing: .45px; }
+.fu { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--acc); background:var(--acc-soft); padding: 2px 8px; border-radius: 6px; }
+
+input[type="text"], input[type="number"], select {
+  width: 100%; background: var(--s2);
+  border: 1px solid var(--bd2); border-radius: var(--r12);
+  color: var(--txt); font-family: 'Space Mono', monospace;
+  font-size: max(16px,14px); padding: 10px 13px;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+  -moz-appearance: textfield; appearance: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+input:focus, select:focus {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 16%, transparent);
+}
+
+input.ok  { border-color: var(--acc); }
+input.err { border-color: var(--red); }
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%2364748b' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center;
+  padding-right: 34px; cursor: pointer;
+}
+
+.expr-prev {
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  margin-top: 4px; padding: 0 3px; min-height: 16px;
+}
+.expr-prev.ok  { color: var(--acc); }
+.expr-prev.err { color: var(--red); }
+
+/* ═══════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════ */
+.btn-row { display: flex; gap: 8px; margin-top: 14px; }
+
+.btnP {
+  flex: 1; background: var(--acc); color: var(--on-acc); border: none;
+  border-radius: var(--r12); font-family: 'Outfit', sans-serif;
+  font-size: 14px; font-weight: 700; padding: 12px;
+  cursor: pointer; transition: transform .17s, box-shadow .17s;
+  touch-action: manipulation;
+}
+.btnP:hover { transform: translateY(-1px); box-shadow: 0 4px 12px color-mix(in srgb, var(--acc) 20%, transparent); }
+.btnP:active { transform: translateY(0); opacity: .9; }
+
+.btnR {
+  background: transparent; color: var(--mut);
+  border: 1px solid var(--bd2); border-radius: var(--r12);
+  font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+  padding: 12px 16px; cursor: pointer; transition: all .17s;
+  touch-action: manipulation; white-space: nowrap;
+}
+.btnR:hover { border-color: var(--red); color: var(--red); }
+
+/* ═══════════════════════════════════════
+   LAYOUT — MAIN GRID
+═══════════════════════════════════════ */
+.method-grid {
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+@media (min-width: 820px) {
+  .method-grid {
+    flex-direction: row; align-items: flex-start;
+  }
+  .method-left  { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; }
+  .method-right { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+}
+
+.method-left  { display: flex; flex-direction: column; gap: 16px; }
+.method-right { display: flex; flex-direction: column; gap: 16px; }
+
+/* ═══════════════════════════════════════
+   RESULTADO — ROOT DISPLAY
+═══════════════════════════════════════ */
+.root-box {
+  background: var(--s2); border: 1px solid var(--bd);
+  border-radius: var(--r12); padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.root-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px;
+}
+.root-label { color: var(--mut); }
+.root-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px; font-weight: 700; color: var(--acc);
+  word-break: break-all; text-align: right;
+}
+.root-val.y { color: var(--yel); }
+.root-val.r { color: var(--red); }
+
+/* ═══════════════════════════════════════
+   TABLA DE ITERACIONES
+═══════════════════════════════════════ */
+.iter-wrap {
+  overflow-x: auto;
+  border-radius: var(--r12);
+  border: 1px solid var(--bd);
+}
+
+table.iter-table {
+  width: 100%; border-collapse: collapse;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(10px, 1.8vw, 12px);
+}
+
+table.iter-table th {
+  background: var(--s3); color: var(--mu2);
+  font-size: 10px; letter-spacing: .8px; text-transform: uppercase;
+  padding: 8px 10px; text-align: center; font-weight: 700;
+  border-bottom: 1px solid var(--bd2); white-space: nowrap;
+}
+
+table.iter-table td {
+  padding: 7px 10px; text-align: center;
+  border-bottom: 1px solid var(--bd);
+  color: var(--mu2); font-size: clamp(10px,1.8vw,12px);
+}
+
+table.iter-table tr:last-child td { border-bottom: none; }
+table.iter-table tr.convergido td { color: var(--acc); font-weight: 700; }
+table.iter-table td:first-child { color: var(--mut); }
+
+/* ═══════════════════════════════════════
+   GRÁFICA
+═══════════════════════════════════════ */
+.chart-outer {
+  position: relative; width: 100%;
+  height: clamp(220px, 45vw, 320px);
+  overflow: hidden;
+}
+.chart-outer canvas {
+  position: absolute; top: 0; left: 0;
+  width: 100% !important; height: 100% !important;
+}
+
+/* ═══════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════ */
+.empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; padding: 40px 16px;
+  color: var(--mut); text-align: center;
+}
+.empty-ico { font-size: 30px; opacity: .4; }
+.empty-txt { font-size: 12px; line-height: 1.7; }
+
+/* ═══════════════════════════════════════
+   HINT / INFO
+═══════════════════════════════════════ */
+.hint {
+  background: var(--acc-soft);
+  border: 1px solid var(--acc-border);
+  border-radius: var(--r8); padding: 10px 14px;
+  font-size: 12px; color: var(--mu2); line-height: 1.65;
+  display: flex; gap: 8px; align-items: flex-start;
+}
+.hint-ico { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+
+.warn {
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--r8); padding: 10px 14px;
+  font-size: 12px; color: var(--mu2); line-height: 1.65;
+  display: flex; gap: 8px; align-items: flex-start;
+}
+
+hr.dv { border: none; border-top: 1px solid var(--bd); margin: 14px 0; }
+
+/* ═══════════════════════════════════════
+   FORMULA DISPLAY
+═══════════════════════════════════════ */
+.formula-box {
+  background: var(--s2); border: 1px solid var(--bd);
+  border-left: 3px solid var(--acc);
+  border-radius: var(--r8); padding: 10px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(10px,2vw,12px); color: var(--acc);
+  line-height: 1.9;
+}
+
+
+/* Guía integrada */
+.guide-overlay { display:none; position:fixed; inset:0; z-index:20; padding:20px; background:rgba(2,6,23,.76); align-items:center; justify-content:center; }
+.guide-overlay.open { display:flex; }
+.guide-box { position:relative; display:flex; width:min(1040px,100%); height:min(760px,92vh); overflow:hidden; border:1px solid var(--bd2); border-radius:18px; background:var(--s1); color:var(--txt); box-shadow:0 24px 80px rgba(0,0,0,.38); }
+.guide-close { position:absolute; top:12px; right:14px; z-index:2; width:40px; height:40px; border:1px solid var(--bd2); border-radius:50%; background:var(--s2); color:var(--txt); font-size:18px; cursor:pointer; }
+.guide-side { width:250px; flex-shrink:0; display:flex; flex-direction:column; background:var(--s2); border-right:1px solid var(--bd); }
+.guide-side-head { padding:24px 18px 16px; }
+.guide-side-head h2 { font-size:20px; }
+.guide-side-head p { color:var(--mut); font-size:11px; margin-top:4px; }
+.guide-nav { overflow:auto; padding:0 10px; }
+.guide-nav-group { padding:6px 0 8px; border-bottom:1px solid var(--bd); }
+.guide-nav-group:last-child { border-bottom:0; }
+.guide-nav-group > span { display:block; padding:5px 8px; color:var(--mut); font:700 9px 'Space Mono',monospace; letter-spacing:1.1px; text-transform:uppercase; }
+.guide-nav button { display:flex; align-items:center; gap:8px; width:100%; min-height:40px; padding:10px 8px; margin:2px 0; border:0; border-radius:8px; color:var(--mu2); background:transparent; font:600 12px 'Outfit',sans-serif; text-align:left; cursor:pointer; }
+.guide-nav button.active,.guide-nav button:hover { background:var(--acc-soft); color:var(--acc); }
+.guide-nav .num { margin-left:auto; font:10px 'Space Mono',monospace; }
+.guide-progress { margin:auto 16px 18px; color:var(--mut); font:10px 'Space Mono',monospace; }
+.guide-track { height:5px; margin-top:8px; overflow:hidden; border-radius:9px; background:var(--s3); }
+.guide-fill { height:100%; background:var(--acc); transition:width .2s; }
+.guide-content { flex:1; overflow:auto; padding:32px clamp(18px,4vw,44px) 24px; }
+.gsec { display:none; max-width:700px; margin:auto; }
+.gsec.active { display:block; animation:fU .2s ease both; }
+.gsec h3 { font-size:clamp(20px,3vw,28px); margin:4px 0 5px; }
+.gsec .lead { color:var(--mut); font-size:13px; margin-bottom:22px; }
+.g-block { padding:15px; margin:12px 0; border:1px solid var(--bd); border-radius:12px; background:var(--s2); }
+.g-block h4 { color:var(--acc); font-size:14px; margin:0 0 9px; }
+.g-block p,.g-block li { color:var(--mu2); font-size:13px; line-height:1.7; }
+.g-block ul,.g-block ol { padding-left:20px; }
+.g-formula { white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; border-left:3px solid var(--acc); border-radius:6px; background:var(--s3); color:var(--acc); font:12px/1.8 'Space Mono',monospace; }
+.g-table { width:100%; border-collapse:collapse; font-size:12px; }
+.g-table th,.g-table td { text-align:left; padding:8px; border-bottom:1px solid var(--bd); color:var(--mu2); }
+.g-table th { color:var(--acc); }
+.guide-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:22px; padding-top:14px; border-top:1px solid var(--bd); }
+.guide-footer button { min-height:40px; border:1px solid var(--bd2); border-radius:8px; padding:8px 12px; color:var(--mu2); background:var(--s2); cursor:pointer; }
+.guide-footer button.primary { border-color:var(--acc); background:var(--acc); color:var(--on-acc); font-weight:700; }
+.guide-footer button:disabled { opacity:.4; cursor:default; }
+.guide-page { color:var(--mut); font:10px 'Space Mono',monospace; }
+@media(max-width:650px) { .tab-bar{flex-wrap:wrap}.method-tabs{flex-basis:100%}.tab-actions{justify-content:center;flex:1;padding:2px 0}.tab-utility{padding:7px 12px}.guide-overlay{padding:8px}.guide-box{height:96vh;flex-direction:column}.guide-side{width:100%;border-right:0;border-bottom:1px solid var(--bd)}.guide-side-head{padding:12px 16px 8px}.guide-side-head p{display:none}.guide-nav{display:flex;overflow:auto;padding:0 8px 8px}.guide-nav-group{display:flex;flex:0 0 auto;align-items:center;gap:3px;padding:0 8px 0 0;border:0;border-right:1px solid var(--bd)}.guide-nav-group > span{display:none}.guide-nav button{width:auto;white-space:nowrap;padding:8px;font-size:11px}.guide-progress{display:none}.guide-content{padding:18px 14px}.guide-close{top:8px;right:8px} }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; } }
+
+/* ═══════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════ */
+@keyframes sD { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fU { from{opacity:0;transform:translateY(10px)}  to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div class="page" role="main">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <span class="badge">Métodos Numéricos · UniEspinal ITFIP · 3er Corte</span>
+    <h1>Métodos Numéricos</h1>
+    <p class="hsub">Bisección &amp; Secante · Dominyk Savino Rodriguez · Johan Villalba Sarmiento</p>
+  </header>
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <div class="method-tabs">
+      <button class="tbtn active" id="tab-bis" onclick="switchTab('bis')">✂️ Bisección</button>
+      <button class="tbtn"        id="tab-sec" onclick="switchTab('sec')">📐 Secante</button>
+    </div>
+    <div class="tab-actions">
+      <button class="tab-utility" type="button" onclick="openGuide()">📘 Guía</button>
+      <button class="tab-utility" type="button" id="themeToggle" onclick="toggleTheme()" aria-pressed="false">☀️ Modo claro</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       TAB 1 — BISECCIÓN
+  ════════════════════════════════════ -->
+  <div class="tpanel active" id="panel-bis">
+    <div class="method-grid">
+
+      <!-- IZQUIERDA: entradas -->
+      <div class="method-left">
+
+        <!-- Función y parámetros -->
+        <div class="card">
+          <div class="ch"><div class="cd"></div><span class="ct">Parámetros — Bisección</span></div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="bis-fx">Función f(x)</label><span class="fu">f(x)</span></div>
+            <input type="text" id="bis-fx" placeholder="ej. x^3 - x - 2" oninput="prevExpr(this,'bis-fx-pv','x')" autocomplete="off" spellcheck="false"/>
+            <div class="expr-prev" id="bis-fx-pv"></div>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="bis-a">Extremo inicial (xᵢ)</label><span class="fu">xᵢ</span></div>
+            <input type="text" id="bis-a" placeholder="ej. 1" oninput="prevExpr(this,'bis-a-pv')" autocomplete="off"/>
+            <div class="expr-prev" id="bis-a-pv"></div>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="bis-b">Extremo final (x𝒇)</label><span class="fu">x𝒇</span></div>
+            <input type="text" id="bis-b" placeholder="ej. 2" oninput="prevExpr(this,'bis-b-pv')" autocomplete="off"/>
+            <div class="expr-prev" id="bis-b-pv"></div>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" id="bis-true-root-label" for="bis-true-root">Raíz verdadera (opcional)</label><span class="fu">xᵥ</span></div>
+            <input type="text" id="bis-true-root" placeholder="para calcular Et (%)" oninput="prevExpr(this,'bis-true-root-pv')" autocomplete="off"/>
+            <div class="expr-prev" id="bis-true-root-pv"></div>
+            <small class="field-help" id="bis-true-root-help">Solo ingrésala si el ejercicio la proporciona; es necesaria si eliges Et.</small>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="bis-error-mode">Error que controla la tolerancia</label><span class="fu">Ea / Et</span></div>
+            <select id="bis-error-mode" onchange="updateBisectionErrorMode()" aria-describedby="bis-error-mode-help">
+              <option value="ea">Ea — aproximado (no requiere raíz verdadera)</option>
+              <option value="et">Et — verdadero (requiere raíz de referencia)</option>
+            </select>
+            <small class="field-help" id="bis-error-mode-help">Ea compara dos puntos medios consecutivos; no se calcula en la primera iteración.</small>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="bis-tol">Tolerancia máxima (<span id="bis-tol-mode-label">Ea %</span>)</label><span class="fu">ε</span></div>
+            <input type="text" id="bis-tol" placeholder="ej. 0.7" value="0.7" oninput="prevExpr(this,'bis-tol-pv')" autocomplete="off"/>
+            <div class="expr-prev" id="bis-tol-pv"></div>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="bis-max">Máximo de iteraciones</label><span class="fu">N</span></div>
+            <input type="text" id="bis-max" placeholder="ej. 100" value="100" oninput="prevExpr(this,'bis-max-pv')" autocomplete="off"/>
+            <div class="expr-prev" id="bis-max-pv"></div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btnP" onclick="runBiseccion()">▶ Calcular</button>
+            <button class="btnR" onclick="resetBiseccion()">↺ Limpiar</button>
+          </div>
+        </div>
+
+        <!-- Fórmula del método -->
+        <div class="card">
+          <div class="ch"><div class="cd y"></div><span class="ct">Método de Bisección</span></div>
+          <div class="formula-box formula-steps" aria-label="Pasos y fórmulas del método de Bisección">
+            <div class="formula-step">
+              <span class="formula-step-title">1 · Punto medio</span>
+              <div class="formula-expression">xᵣ = (xᵢ + x𝒇) / 2</div>
+            </div>
+            <div class="formula-step">
+              <span class="formula-step-title">2 · Actualizar el intervalo</span>
+              <div class="formula-conditions">
+                <div class="formula-condition"><span class="formula-condition-mark">a</span><div>Si <code>f(xᵢ) · f(xᵣ) &lt; 0</code>, se conserva el extremo xi y se actualiza <code>x𝒇 = xᵣ</code>.</div></div>
+                <div class="formula-condition"><span class="formula-condition-mark">b</span><div>Si <code>f(xᵢ) · f(xᵣ) &gt; 0</code>, se conserva el extremo xf y se actualiza <code>xᵢ = xᵣ</code>.</div></div>
+                <div class="formula-condition"><span class="formula-condition-mark">c</span><div>Si <code>f(xᵣ) = 0</code>, se encontró la raíz.</div></div>
+              </div>
+            </div>
+            <div class="formula-step formula-error">
+              <span class="formula-step-title">3 · Errores para controlar la tolerancia</span>
+              <div class="formula-conditions">
+                <div class="formula-condition"><span class="formula-condition-mark">Ea</span><code>|xᵣ⁽ⁿ⁾ − xᵣ⁽ⁿ⁻¹⁾| / |xᵣ⁽ⁿ⁻¹⁾| × 100%</code></div>
+                <div class="formula-condition"><span class="formula-condition-mark">Et</span><code>|xᵥ − xᵣ| / |xᵥ| × 100%</code></div>
+              </div>
+              <small class="field-help">La tolerancia se compara con Ea o Et según el criterio seleccionado.</small>
+            </div>
+          </div>
+          <br/>
+          <div class="hint">
+            <span class="hint-ico">💡</span>
+            <span>El intervalo [xᵢ, x𝒇] debe contener un cambio de signo. Ea compara aproximaciones consecutivas; Et se calcula si se ingresa una raíz verdadera de referencia.</span>
+          </div>
+        </div>
+
+      </div><!-- /method-left -->
+
+      <!-- DERECHA: resultado + tabla + gráfica -->
+      <div class="method-right">
+
+        <!-- Resultado final -->
+        <div class="card" id="bis-result-card">
+          <div class="ch"><div class="cd y"></div><span class="ct">Resultado</span></div>
+          <div class="empty" id="bis-empty">
+            <div class="empty-ico">✂️</div>
+            <div class="empty-txt">Ingresa los parámetros<br/>y presiona <strong>Calcular</strong></div>
+          </div>
+          <div id="bis-result" style="display:none;">
+            <div class="root-box">
+              <div class="root-row"><span class="root-label">Raíz aproximada x*</span><span class="root-val" id="bis-root">—</span></div>
+              <div class="root-row"><span class="root-label">f(x*)</span><span class="root-val y" id="bis-fx-val">—</span></div>
+              <div class="root-row"><span class="root-label">Error aproximado Ea (%)</span><span class="root-val r" id="bis-err">—</span></div>
+              <div class="root-row"><span class="root-label">Error verdadero Et (%)</span><span class="root-val" id="bis-et">—</span></div>
+              <div class="root-row"><span class="root-label">Iteraciones</span><span class="root-val" id="bis-iters">—</span></div>
+              <div class="root-row"><span class="root-label">Estado</span><span class="root-val" id="bis-status">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfica -->
+        <div class="card">
+          <div class="ch"><div class="cd"></div><span class="ct">Gráfica — f(x)</span></div>
+          <div class="empty" id="bis-chart-empty">
+            <div class="empty-ico">📈</div>
+            <div class="empty-txt">La gráfica aparece después de calcular</div>
+          </div>
+          <div id="bis-chart-area" style="display:none;">
+            <div class="chart-outer">
+              <canvas id="bis-chart" role="img" aria-label="Gráfica de f(x)"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla para tabular la función antes/además de revisar las iteraciones -->
+        <div class="card">
+          <div class="ch"><div class="cd y"></div><span class="ct">Tabla de valores — f(x)</span></div>
+          <p class="field-help">Muestras uniformes entre los extremos ingresados, junto con la gráfica.</p>
+          <div class="empty" id="bis-values-empty"><div class="empty-ico">🧮</div><div class="empty-txt">Los valores aparecen después de calcular</div></div>
+          <div id="bis-values-area" style="display:none;">
+            <div class="iter-wrap">
+              <table class="iter-table"><thead><tr><th>x</th><th>f(x)</th></tr></thead><tbody id="bis-values-tbody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de iteraciones -->
+        <div class="card">
+          <div class="ch"><div class="cd p"></div><span class="ct">Tabla de Iteraciones</span></div>
+          <div class="empty" id="bis-table-empty">
+            <div class="empty-ico">📋</div>
+            <div class="empty-txt">La tabla aparece después de calcular</div>
+          </div>
+          <div id="bis-table-area" style="display:none;">
+            <div class="iter-wrap">
+              <table class="iter-table">
+                <thead>
+                  <tr>
+                    <th>n</th><th>xᵢ</th><th>x𝒇</th><th>xᵣ</th>
+                    <th>f(xᵢ)</th><th>f(x𝒇)</th><th>f(xᵣ)</th><th>Et (%)</th><th>Ea (%)</th>
+                  </tr>
+                </thead>
+                <tbody id="bis-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /method-right -->
+    </div>
+  </div><!-- /panel-bis -->
+
+  <!-- ════════════════════════════════════
+       TAB 2 — SECANTE
+  ════════════════════════════════════ -->
+  <div class="tpanel" id="panel-sec">
+    <div class="method-grid">
+
+      <!-- IZQUIERDA: entradas -->
+      <div class="method-left">
+
+        <div class="card">
+          <div class="ch"><div class="cd p" style="background:var(--pur)"></div><span class="ct">Parámetros — Secante</span></div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="sec-fx">Función f(x)</label><span class="fu">f(x)</span></div>
+            <input type="text" id="sec-fx" placeholder="ej. x^3 - x - 2" oninput="prevExpr(this,'sec-fx-pv','x')" autocomplete="off" spellcheck="false"/>
+            <div class="expr-prev" id="sec-fx-pv"></div>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="sec-x0">Primer punto x₀</label><span class="fu">x₀</span></div>
+            <input type="text" id="sec-x0" placeholder="ej. 1" oninput="prevExpr(this,'sec-x0-pv')" autocomplete="off"/>
+            <div class="expr-prev" id="sec-x0-pv"></div>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="sec-x1">Segundo punto x₁</label><span class="fu">x₁</span></div>
+            <input type="text" id="sec-x1" placeholder="ej. 2" oninput="prevExpr(this,'sec-x1-pv')" autocomplete="off"/>
+            <div class="expr-prev" id="sec-x1-pv"></div>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="sec-tol">Tolerancia Ea máx. (%)</label><span class="fu">ε</span></div>
+            <input type="text" id="sec-tol" placeholder="ej. 0.1" value="0.1" oninput="prevExpr(this,'sec-tol-pv')" autocomplete="off"/>
+            <div class="expr-prev" id="sec-tol-pv"></div>
+          </div>
+
+          <div class="field">
+            <div class="fl"><label class="fn" for="sec-max">Máximo de iteraciones</label><span class="fu">N</span></div>
+            <input type="text" id="sec-max" placeholder="ej. 100" value="100" oninput="prevExpr(this,'sec-max-pv')" autocomplete="off"/>
+            <div class="expr-prev" id="sec-max-pv"></div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btnP" onclick="runSecante()">▶ Calcular</button>
+            <button class="btnR" onclick="resetSecante()">↺ Limpiar</button>
+          </div>
+        </div>
+
+        <!-- Fórmula -->
+        <div class="card">
+          <div class="ch"><div class="cd" style="background:var(--pur)"></div><span class="ct">Método de la Secante</span></div>
+          <div class="formula-box formula-steps" aria-label="Pasos y fórmulas del método de la Secante">
+            <div class="formula-step">
+              <span class="formula-step-title">1 · Calcular la nueva aproximación</span>
+              <div class="formula-expression">x₂ = x₁ − <span class="formula-fraction"><span>f(x₁) · (x₁ − x₀)</span><span>f(x₁) − f(x₀)</span></span></div>
+            </div>
+            <div class="formula-step">
+              <span class="formula-step-title">2 · Actualizar los puntos</span>
+              <div class="formula-expression">x₀ = x₁ &nbsp; · &nbsp; x₁ = x₂</div>
+            </div>
+            <div class="formula-step formula-error">
+              <span class="formula-step-title">3 · Ea — error porcentual</span>
+              <div class="formula-expression">Ea (%) = |x₂ − x₁| / |x₂| × 100%</div>
+            </div>
+          </div>
+          <br/>
+          <div class="hint">
+            <span class="hint-ico">💡</span>
+            <span>No requiere cambio de signo. Converge más rápido que Bisección pero puede divergir si f(x₁) ≈ f(x₀).</span>
+          </div>
+        </div>
+
+      </div><!-- /method-left -->
+
+      <!-- DERECHA -->
+      <div class="method-right">
+
+        <div class="card">
+          <div class="ch"><div class="cd y"></div><span class="ct">Resultado</span></div>
+          <div class="empty" id="sec-empty">
+            <div class="empty-ico">📐</div>
+            <div class="empty-txt">Ingresa los parámetros<br/>y presiona <strong>Calcular</strong></div>
+          </div>
+          <div id="sec-result" style="display:none;">
+            <div class="root-box">
+              <div class="root-row"><span class="root-label">Raíz aproximada x*</span><span class="root-val" id="sec-root">—</span></div>
+              <div class="root-row"><span class="root-label">f(x*)</span><span class="root-val y" id="sec-fx-val">—</span></div>
+              <div class="root-row"><span class="root-label">Error aproximado Ea (%)</span><span class="root-val r" id="sec-err">—</span></div>
+              <div class="root-row"><span class="root-label">Iteraciones</span><span class="root-val" id="sec-iters">—</span></div>
+              <div class="root-row"><span class="root-label">Estado</span><span class="root-val" id="sec-status">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfica -->
+        <div class="card">
+          <div class="ch"><div class="cd"></div><span class="ct">Gráfica — f(x)</span></div>
+          <div class="empty" id="sec-chart-empty">
+            <div class="empty-ico">📈</div>
+            <div class="empty-txt">La gráfica aparece después de calcular</div>
+          </div>
+          <div id="sec-chart-area" style="display:none;">
+            <div class="chart-outer">
+              <canvas id="sec-chart" role="img" aria-label="Gráfica de f(x)"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="card">
+          <div class="ch"><div class="cd p"></div><span class="ct">Tabla de Iteraciones</span></div>
+          <div class="empty" id="sec-table-empty">
+            <div class="empty-ico">📋</div>
+            <div class="empty-txt">La tabla aparece después de calcular</div>
+          </div>
+          <div id="sec-table-area" style="display:none;">
+            <div class="iter-wrap">
+              <table class="iter-table">
+                <thead>
+                  <tr>
+                    <th>n</th><th>x₀</th><th>x₁</th><th>x₂</th>
+                    <th>f(x₀)</th><th>f(x₁)</th><th>f(x₂)</th><th>Ea (%)</th>
+                  </tr>
+                </thead>
+                <tbody id="sec-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div><!-- /panel-sec -->
+
+</div><!-- /page -->
+<div class="guide-overlay" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle" onclick="if(event.target===this)closeGuide()"><div class="guide-box"><button class="guide-close" type="button" onclick="closeGuide()" aria-label="Cerrar guía">✕</button><aside class="guide-side"><div class="guide-side-head"><h2 id="guideTitle">📘 Guía de uso</h2><p>Métodos numéricos · Bisección y Secante</p></div>
+<nav class="guide-nav" id="guideNav" aria-label="Secciones de la guía">
+<div class="guide-nav-group"><span>Primeros pasos</span><button type="button" class="active" onclick="goToSection(0)">🎯 Bienvenida <span class="num">01</span></button><button type="button" onclick="goToSection(1)">🧭 Interfaz <span class="num">02</span></button><button type="button" onclick="goToSection(2)">🪜 Uso general <span class="num">03</span></button></div>
+<div class="guide-nav-group"><span>Métodos</span><button type="button" onclick="goToSection(3)">✂️ Bisección <span class="num">04</span></button><button type="button" onclick="goToSection(4)">📐 Secante <span class="num">05</span></button><button type="button" onclick="goToSection(5)">⚙️ Parámetros <span class="num">06</span></button></div>
+<div class="guide-nav-group"><span>Lectura de resultados</span><button type="button" onclick="goToSection(6)">📋 Iteraciones <span class="num">07</span></button><button type="button" onclick="goToSection(7)">📊 Resultados <span class="num">08</span></button><button type="button" onclick="goToSection(8)">📈 Gráficos <span class="num">09</span></button></div>
+<div class="guide-nav-group"><span>Ayuda</span><button type="button" onclick="goToSection(9)">💬 Mensajes <span class="num">10</span></button><button type="button" onclick="goToSection(10)">🌗 Temas <span class="num">11</span></button><button type="button" onclick="goToSection(11)">↺ Nuevo ejercicio <span class="num">12</span></button><button type="button" onclick="goToSection(12)">💡 Recomendaciones <span class="num">13</span></button><button type="button" onclick="goToSection(13)">🛠️ Problemas <span class="num">14</span></button><button type="button" onclick="goToSection(14)">📖 Glosario <span class="num">15</span></button><button type="button" onclick="goToSection(15)">🚀 Cierre <span class="num">16</span></button></div>
+</nav><div class="guide-progress"><span>Progreso</span> <span id="progressText">1 / 16</span><div class="guide-track"><div class="guide-fill" id="progressFill" style="width:6.25%"></div></div></div></aside><div class="guide-content" id="guideContent">
+<section class="gsec active" id="gsec-0"><h3>Bienvenido a la Calculadora de Métodos Numéricos</h3><p class="lead">Una guía para ingresar una función, ejecutar un método y comprender el proceso de aproximación de una raíz.</p><div class="g-block"><h4>¿Para qué sirve?</h4><p>Esta calculadora ha sido diseñada como una herramienta de apoyo para resolver y analizar problemas relacionados con métodos numéricos. Permite ingresar los datos de una función, ejecutar el método seleccionado y visualizar los resultados obtenidos durante el proceso de cálculo.</p><ul><li>Ingresar una función matemática.</li><li>Elegir Bisección o Secante y completar sus parámetros.</li><li>Ejecutar el cálculo y consultar raíz aproximada, error, estado e iteraciones.</li><li>Examinar la tabla y el gráfico que generan ambos métodos.</li><li>Limpiar los campos para comenzar otro ejercicio.</li></ul></div><div class="g-block"><h4>Uso académico</h4><p>Es una herramienta de apoyo: interpreta los resultados teniendo en cuenta las condiciones y el criterio de parada del método. Revisa la tabla para comprender cómo se obtuvo la aproximación.</p></div></section>
+<section class="gsec" id="gsec-1"><h3>Conociendo la interfaz</h3><p class="lead">La barra y las tarjetas organizan las opciones, entradas y resultados.</p><div class="g-block"><h4>Barra superior</h4><p>La barra reúne las pestañas de métodos, el botón <strong>Guía</strong> y el control de tema <strong>Modo claro / Modo oscuro</strong>. El tema solo cambia la apariencia.</p><h4>Pestañas de métodos</h4><p><strong>Bisección</strong> y <strong>Secante</strong> muestran el formulario, resultados, tabla y gráfico correspondientes al método activo.</p></div><div class="g-block"><h4>Tarjetas de la calculadora</h4><p><strong>Parámetros</strong>: campos para función y valores de entrada. <strong>Resultado</strong>: raíz aproximada, f(x*), error final, iteraciones y estado. <strong>Tabla de Iteraciones</strong>: valores usados en cada paso. <strong>Gráfica — f(x)</strong>: curva, raíz y puntos de iteración.</p></div></section>
+<section class="gsec" id="gsec-2"><h3>¿Cómo utilizar la calculadora?</h3><p class="lead">Sigue estos pasos para cada ejercicio.</p><div class="g-block"><ol><li>Selecciona la pestaña Bisección o Secante.</li><li>Escribe la función en el campo <strong>Función f(x)</strong>.</li><li>Completa los puntos o extremos requeridos por el método.</li><li>Revisa la tolerancia y el máximo de iteraciones; puedes cambiarlos.</li><li>Pulsa <strong>Calcular</strong>. Si los datos pasan las validaciones, aparecen el resultado, la tabla y la gráfica.</li><li>Examina la aproximación y el proceso iterativo; para otro ejercicio, edita los campos o pulsa <strong>Limpiar</strong>.</li></ol></div><div class="g-block"><h4>Expresiones que acepta</h4><p>El parser reconoce los operadores +, −, *, / y ^, paréntesis, x, las constantes pi y e, y las funciones sqrt, sin, cos, tan, abs, exp, log (base 10) y ln (logaritmo natural). También acepta notación científica en los números, por ejemplo <code>1e-3</code>. Escribe las funciones como llamadas con paréntesis, por ejemplo <code>sqrt(x)</code> o <code>sin(x)</code>. Usa multiplicación explícita: <code>2*x</code>, no <code>2x</code>.</p></div></section>
+<section class="gsec" id="gsec-3"><h3>Método de Bisección</h3><p class="lead">Método cerrado que aproxima una raíz dentro de un intervalo con cambio de signo.</p><div class="g-block"><h4>Paso 0 · Definir, tabular y graficar</h4><p>Escribe la función f(x). Al calcular, la aplicación muestra una tabla de 11 valores uniformes de x y f(x) entre los dos extremos, además de la gráfica y la tabla de iteraciones.</p></div><div class="g-block"><h4>Paso 1 · Verificar intervalo</h4><p>Ingresa xi y xf en cualquier orden; pueden ser positivos o negativos. Evalúa f(xi) y f(xf): si una vale cero, ese extremo es una raíz; si ninguna vale cero, continúa solo cuando f(xi)·f(xf) &lt; 0. El orden de ingreso no cambia la verificación ni el resultado. Se presupone continuidad en el intervalo.</p></div><div class="g-block"><h4>Paso 2 · Calcular punto medio</h4><div class="g-formula">xᵣ = (xᵢ + x𝒇) / 2</div><p>xᵣ es la aproximación de esta iteración.</p></div><div class="g-block"><h4>Paso 3 · Elegir el nuevo intervalo</h4><ul><li>Si f(xᵢ)·f(xᵣ) &lt; 0, reemplaza x𝒇 por xᵣ.</li><li>Si f(xᵢ)·f(xᵣ) &gt; 0, reemplaza xᵢ por xᵣ.</li><li>Si f(xᵣ) = 0 numéricamente, se encontró la raíz.</li></ul><p>Repite desde el nuevo intervalo.</p></div><div class="g-block"><h4>Paso 4 · Calcular errores y parar</h4><div class="g-formula">Ea (%) = |xᵣ⁽ⁿ⁾ − xᵣ⁽ⁿ⁻¹⁾| / |xᵣ⁽ⁿ⁻¹⁾| × 100%
+Et (%) = |xᵥ − xᵣ| / |xᵥ| × 100%</div><p>Elige si la tolerancia la controla Ea o Et. Con Ea, el programa continúa hasta que Ea sea menor que la tolerancia, encuentre una raíz numérica o llegue al máximo de iteraciones; la primera iteración no tiene Ea porque aún no existe xᵣ anterior. Con Et, debes ingresar una raíz verdadera y el programa se detiene cuando Et es menor que la tolerancia. Si el ejercicio no proporciona la raíz verdadera, o esta es cero, selecciona Ea porque Et porcentual no se puede calcular con una referencia cero.</p></div><div class="g-block"><h4>Resultado y tabla</h4><p>La última aproximación xᵣ se muestra como raíz aproximada. La tabla registra xᵢ, x𝒇, xᵣ, las evaluaciones de la función, Et (si se proporcionó referencia) y Ea.</p></div></section>
+<section class="gsec" id="gsec-4"><h3>Método de Secante</h3><p class="lead">Método abierto que usa dos aproximaciones para calcular una nueva, sin conservar necesariamente un intervalo con cambio de signo.</p><div class="g-block"><h4>Entradas</h4><p>Escribe f(x), <strong>Primer punto x₀</strong> y <strong>Segundo punto x₁</strong>. Los puntos deben ser distintos y la función debe poder evaluarse en ellos.</p></div><div class="g-block"><h4>Fórmula de la implementación</h4><div class="g-formula">x₂ = x₁ − f(x₁) · (x₁ − x₀) / (f(x₁) − f(x₀))
+Luego: x₀ = x₁, x₁ = x₂
+Ea (%) = |x₂ − x₁| / |x₂| × 100%</div><p>x₀ y x₁ son las aproximaciones actuales; x₂ es la nueva aproximación. La fórmula requiere que f(x₁)−f(x₀) no sea prácticamente cero.</p></div><div class="g-block"><h4>Procedimiento y parada</h4><ol><li>Evalúa la función en x₀ y x₁.</li><li>Calcula x₂ y f(x₂).</li><li>Calcula Ea = |x₂ − x₁| / |x₂| × 100%, el cambio relativo porcentual entre x₂ y el x₁ anterior.</li><li>Continúa con el par actualizado hasta que Ea sea menor que la tolerancia, |f(x₂)| &lt; 10⁻¹⁴ o se alcance N.</li></ol><p>La aproximación final es el último x₂ calculado. Si el denominador es casi cero o f(x₂) no es finita, la aplicación muestra un aviso de divergencia y no presenta una nueva tabla.</p></div></section>
+<section class="gsec" id="gsec-5"><h3>Parámetros del cálculo</h3><p class="lead">Los campos y unidades de cada método.</p><div class="g-block"><table class="g-table"><thead><tr><th>Campo</th><th>Bisección</th><th>Secante</th><th>Uso</th></tr></thead><tbody><tr><td>Función f(x)</td><td>Sí</td><td>Sí</td><td>Función cuya raíz se aproxima.</td></tr><tr><td>Puntos iniciales</td><td>xᵢ, x𝒇</td><td>x₀, x₁</td><td>Intervalo con cambio de signo o dos aproximaciones.</td></tr><tr><td>Raíz verdadera de referencia</td><td>Opcional</td><td>No existe</td><td>En Bisección es opcional con Ea; es necesaria para calcular Et y usarlo como criterio de parada.</td></tr><tr><td>Tolerancia ε</td><td>Ea (%) o Et (%)</td><td>Ea (%)</td><td>Bisección termina cuando el error seleccionado es menor que ε; Secante cuando Ea es menor que ε.</td></tr><tr><td>Máximo de iteraciones N</td><td>Sí</td><td>Sí</td><td>Límite positivo de pasos (máximo 10 000); el valor ingresado se redondea al entero más cercano.</td></tr></tbody></table></div><div class="g-block"><h4>Cómo elegir la tolerancia</h4><p>En Bisección el selector indica si la tolerancia porcentual se compara con Ea o Et. Et requiere ingresar la raíz verdadera; si no se conoce, se debe elegir Ea. Por ejemplo, 0.7 significa 0.7%. En Secante la tolerancia se compara con Ea, el cambio relativo porcentual entre aproximaciones consecutivas. En ambos casos debe ser positiva y se expresa en porcentaje.</p></div></section>
+<section class="gsec" id="gsec-6"><h3>¿Cómo leer la tabla de iteraciones?</h3><p class="lead">Cada fila registra los datos usados en una iteración.</p><div class="g-block"><h4>Columnas de Bisección</h4><table class="g-table"><thead><tr><th>Columna</th><th>Significado</th></tr></thead><tbody><tr><td>n</td><td>Número de iteración, comienza en 1.</td></tr><tr><td>xᵢ, x𝒇</td><td>Extremos al inicio de esa iteración (en los campos se identifican como xᵢ y x𝒇).</td></tr><tr><td>xᵣ</td><td>Punto medio (xᵢ+x𝒇)/2.</td></tr><tr><td>f(xᵢ), f(x𝒇), f(xᵣ)</td><td>Evaluaciones de la función en los puntos indicados.</td></tr><tr><td>Et (%)</td><td>Error respecto de la raíz verdadera; aparece si se ingresó esa referencia. Si no, se muestra —.</td></tr><tr><td>Ea (%)</td><td>Error relativo aproximado entre esta xᵣ y la xᵣ de la fila anterior. En la primera fila se muestra —.</td></tr></tbody></table></div><div class="g-block"><h4>Columnas de Secante</h4><table class="g-table"><thead><tr><th>Columna</th><th>Significado</th></tr></thead><tbody><tr><td>n</td><td>Número de iteración.</td></tr><tr><td>x₀, x₁, x₂</td><td>Dos puntos usados y la nueva aproximación.</td></tr><tr><td>f(x₀), f(x₁), f(x₂)</td><td>Evaluación de la función en esos puntos.</td></tr><tr><td>Ea (%)</td><td>|x₂−x₁| / |x₂| × 100%, el cambio relativo porcentual entre esta x₂ y la x₁ anterior.</td></tr></tbody></table><p>Al recorrer las filas se observa cómo avanza cada método hacia una raíz.</p></div></section>
+<section class="gsec" id="gsec-7"><h3>Interpretación de resultados</h3><p class="lead">La tarjeta Resultado usa etiquetas específicas para cada método.</p><div class="g-block"><table class="g-table"><thead><tr><th>Etiqueta</th><th>Significado</th></tr></thead><tbody><tr><td>Raíz aproximada x*</td><td>Último punto calculado: xᵣ en Bisección y x₂ en Secante.</td></tr><tr><td>f(x*)</td><td>Valor de la función en la aproximación mostrada.</td></tr><tr><td>Error aproximado Ea (%)</td><td>En Bisección, el cambio relativo entre dos xᵣ consecutivas; controla la parada si se selecciona Ea.</td></tr><tr><td>Error verdadero Et (%)</td><td>En Bisección, diferencia relativa con la raíz verdadera opcional. Sin referencia aparece —.</td></tr><tr><td>Error aproximado Ea (%)</td><td>En Secante, cambio relativo porcentual entre aproximaciones consecutivas: |x₂−x₁| / |x₂| × 100%.</td></tr><tr><td>Iteraciones</td><td>Número de pasos ejecutados; una raíz en un extremo se informa con 0.</td></tr><tr><td>Estado</td><td>Indica convergencia o máximo de iteraciones alcanzado.</td></tr></tbody></table></div><div class="g-block"><p>Interpreta el error según el método. En ambos métodos Ea se expresa en porcentaje: en Bisección compara puntos medios consecutivos; en Secante compara las aproximaciones x₂ y x₁ de cada iteración.</p></div></section>
+<section class="gsec" id="gsec-8"><h3>Interpretación del gráfico</h3><p class="lead">Ambos métodos generan una gráfica cuando el cálculo produce resultados.</p><div class="g-block"><h4>Ejes y elementos</h4><ul><li>Eje X: valores de x; eje Y: valores de f(x).</li><li>La curva está etiquetada <strong>f(x)</strong>.</li><li>La línea horizontal discontinua representa <strong>y = 0</strong>.</li><li>Un marcador identifica la raíz aproximada x*.</li><li>Los puntos etiquetados <strong>Iteraciones</strong> muestran los puntos generados por el método.</li></ul></div><div class="g-block"><h4>Relación con el resultado</h4><p>La raíz aproximada se ubica sobre y=0; su coordenada x corresponde al resultado numérico. En Bisección los puntos son los puntos medios c. En Secante son las nuevas aproximaciones x₂. Pasa el cursor por los elementos para consultar coordenadas.</p></div></section>
+<section class="gsec" id="gsec-9"><h3>Mensajes de la calculadora</h3><p class="lead">Los avisos identifican datos inválidos o condiciones que impiden continuar.</p><div class="g-block"><table class="g-table"><thead><tr><th>Aviso</th><th>Qué revisar</th></tr></thead><tbody><tr><td>Función vacía</td><td>Escribe una expresión en Función f(x).</td></tr><tr><td>Puntos o parámetros inválidos</td><td>Usa expresiones numéricas válidas; si completas la raíz verdadera opcional, también debe ser válida.</td></tr><tr><td>Tolerancia positiva / máximo positivo</td><td>La tolerancia debe ser mayor que cero y expresarse en porcentaje en ambos métodos; N al menos uno.</td></tr><tr><td>Máximo superior a 10 000</td><td>Existe un tope de 10 000 iteraciones para evitar que la página se congele; ingresa un valor menor.</td></tr><tr><td>Et requiere raíz verdadera</td><td>Ingresa una raíz verdadera distinta de cero o cambia el criterio a Ea.</td></tr><tr><td>Extremos con el mismo signo</td><td>En Bisección, revisa que f(xᵢ)·f(x𝒇) sea negativo; si es positivo, los signos son iguales. El orden de xi y xf no importa.</td></tr><tr><td>Función no definida en puntos o intervalo</td><td>Revisa el dominio de f(x) en los extremos y puntos que calcula.</td></tr><tr><td>x₀ y x₁ no pueden ser iguales</td><td>Secante necesita dos puntos distintos.</td></tr><tr><td>Denominador casi cero / f(x₂) no finita</td><td>Secante no puede continuar esa iteración; prueba otros puntos iniciales.</td></tr></tbody></table><p>Lee el aviso, corrige los datos y vuelve a ejecutar.</p></div></section>
+<section class="gsec" id="gsec-10"><h3>Cambiar entre modo oscuro y modo claro</h3><p class="lead">El control de tema está junto a las pestañas en la barra superior.</p><div class="g-block"><ol><li>Localiza el botón de tema, que muestra el modo al que puedes cambiar.</li><li>Púlsalo para alternar entre <strong>🌙 Modo oscuro</strong> y <strong>☀️ Modo claro</strong>.</li><li>Los colores de la calculadora, los gráficos y esta guía cambian sin recargar la página.</li></ol><p>La preferencia se guarda en el navegador para la próxima visita. Cambiar el tema no altera las funciones, fórmulas ni resultados.</p></div></section>
+<section class="gsec" id="gsec-11"><h3>Realizar un nuevo ejercicio</h3><p class="lead">Cada pestaña tiene su propio botón Limpiar.</p><div class="g-block"><h4>Qué reinicia Limpiar</h4><p>En la pestaña activa borra la función, extremos o puntos iniciales, restablece el criterio de Bisección a Ea y la tolerancia a 0.7%, o la tolerancia de Secante a 0.1%, y el máximo a 100, limpia los avisos de expresión y oculta resultado, tabla y gráfica. También elimina las filas y destruye el gráfico de esa pestaña.</p></div><div class="g-block"><h4>Para comparar ejercicios</h4><ol><li>Anota los resultados que quieras comparar.</li><li>Modifica la función o los parámetros, o pulsa Limpiar.</li><li>Ejecuta de nuevo con Calcular.</li><li>Compara la raíz, el error y las iteraciones.</li></ol></div></section>
+<section class="gsec" id="gsec-12"><h3>Recomendaciones</h3><p class="lead">Estas sugerencias ayudan a entender el proceso y verificar los datos.</p><div class="g-block"><ul><li>Revisa paréntesis, operadores y nombres de funciones.</li><li>Usa * explícito para multiplicar.</li><li>Comprueba los valores y las condiciones del método antes de calcular.</li><li>Elige una tolerancia coherente con la precisión que necesitas.</li><li>Consulta la tabla completa y no solo la última fila.</li><li>Relaciona el resultado con f(x*) y observa dónde cruza la curva el eje y=0.</li><li>Si Bisección rechaza el intervalo, verifica los signos en sus extremos.</li></ul><p>Son recomendaciones de uso; las validaciones que impone el programa se describen en las secciones de cada método y mensajes.</p></div></section>
+<section class="gsec" id="gsec-13"><h3>¿Qué hacer si no funciona el cálculo?</h3><p class="lead">Revisa el mensaje y los parámetros del método seleccionado.</p><div class="g-block"><h4>La calculadora no ejecuta el método</h4><p>Confirma que ingresaste la función y todos los valores requeridos, con tolerancia y máximo positivos.</p><h4>Aparece un mensaje de error</h4><p>Lee el texto y corrige la condición indicada. En Bisección revisa el orden y cambio de signo; en Secante revisa que los puntos sean distintos y que el denominador no se anule.</p><h4>El resultado no es el esperado</h4><p>Verifica la expresión y los puntos iniciales o el intervalo. Examina la tabla, el estado, el error y f(x*) para comprender qué pasó.</p><h4>No aparece el gráfico</h4><p>El gráfico se genera después de calcular. Comprueba que el método haya terminado sin aviso de error y que Chart.js (cargado desde la CDN incluida en la página) esté disponible. Si la función no está definida en algunas partes del rango, la curva puede tener segmentos vacíos.</p></div></section>
+<section class="gsec" id="gsec-14"><h3>Glosario de términos</h3><p class="lead">Conceptos que aparecen en los métodos y resultados.</p><div class="g-block"><table class="g-table"><thead><tr><th>Término</th><th>Explicación sencilla</th></tr></thead><tbody><tr><td>Función</td><td>Regla f(x) que asigna un valor a cada x.</td></tr><tr><td>Raíz</td><td>Valor de x para el cual f(x)=0.</td></tr><tr><td>Iteración</td><td>Un paso repetido del método.</td></tr><tr><td>Aproximación</td><td>Valor numérico cercano a la raíz.</td></tr><tr><td>Error</td><td>Medida del cambio o del intervalo que usa el criterio del método.</td></tr><tr><td>Tolerancia</td><td>Umbral de error elegido para detener el proceso.</td></tr><tr><td>Intervalo</td><td>Conjunto de valores entre a y b.</td></tr><tr><td>Método cerrado</td><td>Método que mantiene una raíz dentro de un intervalo, como Bisección.</td></tr><tr><td>Método abierto</td><td>Método que itera desde puntos iniciales sin mantener un intervalo, como Secante.</td></tr><tr><td>xᵢ, x𝒇</td><td>Extremos inicial y final del intervalo de Bisección (campos xᵢ y x𝒇).</td></tr><tr><td>xᵣ</td><td>Punto medio (xᵢ+x𝒇)/2 de Bisección.</td></tr><tr><td>Ea</td><td>Error relativo aproximado entre dos valores consecutivos, en porcentaje: |xᵣ⁽ⁿ⁾ − xᵣ⁽ⁿ⁻¹⁾| / |xᵣ⁽ⁿ⁻¹⁾| × 100% en Bisección y |x₂ − x₁| / |x₂| × 100% en Secante.</td></tr><tr><td>Et</td><td>Error relativo respecto de la raíz verdadera de referencia, si se conoce.</td></tr><tr><td>x₀, x₁</td><td>Puntos actuales usados por Secante.</td></tr><tr><td>x₂</td><td>Nueva aproximación calculada por Secante.</td></tr></tbody></table></div></section>
+<section class="gsec" id="gsec-15"><h3>¡Listo para comenzar!</h3><p class="lead">Ya conoces las entradas, resultados y criterios principales.</p><div class="g-block"><p>Ahora puedes seleccionar un método, ingresar los datos solicitados y ejecutar el cálculo. Recuerda revisar tanto el resultado final como la tabla de iteraciones para comprender cómo se obtiene la aproximación.</p></div><div class="g-block"><h4>Resumen rápido</h4><p><strong>Bisección:</strong> función, extremos en cualquier orden con cambio de signo y criterio Ea o Et. <strong>Secante:</strong> función y dos puntos iniciales distintos. En ambos: define tolerancia y máximo, pulsa Calcular y analiza el resultado, la tabla y la gráfica.</p></div><div class="g-block"><button type="button" class="tab-utility" onclick="closeGuide()">Cerrar guía</button></div></section>
+</div></div></div>
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════
+   ESTADO
+══════════════════════════════════════════ */
+let bisChart = null;
+let secChart = null;
+
+/* Tope de seguridad: evita que la página se congele con valores enormes */
+const MAX_ITERACIONES = 10000;
+
+/* ══════════════════════════════════════════
+   DOM
+══════════════════════════════════════════ */
+const g = id => document.getElementById(id);
+
+/* Tema y guía */
+let guideOpener = null;
+let previousBodyOverflow = '';
+const themeToken = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function applyTheme(theme, persist = true) {
+  const selected = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = selected;
+  const button = g('themeToggle');
+  if (button) {
+    button.textContent = selected === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro';
+    button.setAttribute('aria-pressed', String(selected === 'light'));
+  }
+  if (persist) { try { localStorage.setItem('metodos-numericos-theme', selected); } catch {} }
+  [bisChart, secChart].filter(Boolean).forEach(chart => {
+    const light = selected === 'light';
+    const tick = light ? '#526174' : '#b0bdca';
+    chart.data.datasets[0].borderColor = themeToken(chart.canvas.id === 'sec-chart' ? '--chart-sec' : '--chart-bis');
+    chart.data.datasets[0].backgroundColor = light ? 'rgba(15,118,110,.06)' : 'rgba(40,184,166,.07)';
+    chart.data.datasets[1].borderColor = light ? 'rgba(23,32,51,.24)' : 'rgba(226,232,240,.18)';
+    chart.data.datasets[2].borderColor = themeToken('--red');
+    chart.data.datasets[2].backgroundColor = themeToken('--red');
+    chart.data.datasets[3].borderColor = themeToken('--chart-iter');
+    chart.data.datasets[3].backgroundColor = light ? 'rgba(154,91,8,.45)' : 'rgba(228,173,55,.45)';
+    chart.options.plugins.legend.labels.color = tick;
+    chart.options.plugins.tooltip.backgroundColor = light ? '#ffffff' : '#0d1320';
+    chart.options.plugins.tooltip.borderColor = light ? 'rgba(15,23,42,.16)' : 'rgba(226,232,240,.12)';
+    chart.options.plugins.tooltip.titleColor = light ? '#475569' : '#94a3b8';
+    chart.options.plugins.tooltip.bodyColor = light ? '#172033' : '#e2e8f0';
+    chart.options.scales.x.grid.color = light ? 'rgba(15,23,42,.08)' : 'rgba(255,255,255,.04)';
+    chart.options.scales.y.grid.color = light ? 'rgba(15,23,42,.08)' : 'rgba(255,255,255,.05)';
+    chart.options.scales.x.ticks.color = tick;
+    chart.options.scales.y.ticks.color = tick;
+    chart.options.scales.x.title.color = tick;
+    chart.options.scales.y.title.color = tick;
+    chart.update('none');
+  });
+}
+function toggleTheme() { applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); }
+function openGuide() {
+  const modal = g('guideModal');
+  if (modal.classList.contains('open')) return;
+  guideOpener = document.activeElement;
+  previousBodyOverflow = document.body.style.overflow;
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  modal.querySelector('.gsec.active h3')?.focus({ preventScroll:true });
+}
+function closeGuide() {
+  g('guideModal').classList.remove('open');
+  document.body.style.overflow = previousBodyOverflow;
+  if (guideOpener?.isConnected) guideOpener.focus();
+}
+function setupGuideNavigation() {
+  const sections = [...document.querySelectorAll('.gsec')];
+  sections.forEach((section, index) => {
+    const footer = document.createElement('div');
+    footer.className = 'guide-footer';
+    const previous = document.createElement('button');
+    previous.type = 'button';
+    previous.textContent = '← Anterior';
+    previous.disabled = index === 0;
+    previous.onclick = () => goToSection(index - 1);
+    const page = document.createElement('span');
+    page.className = 'guide-page';
+    page.textContent = `${index + 1} de ${sections.length}`;
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'primary';
+    next.textContent = index === sections.length - 1 ? 'Cerrar guía ✓' : 'Siguiente →';
+    next.onclick = index === sections.length - 1 ? closeGuide : () => goToSection(index + 1);
+    footer.append(previous, page, next);
+    section.appendChild(footer);
+  });
+}
+function goToSection(index) {
+  const sections = [...document.querySelectorAll('.gsec')];
+  const target = Math.max(0, Math.min(sections.length - 1, Number(index)));
+  sections.forEach((section, i) => section.classList.toggle('active', i === target));
+  const navButtons = [...g('guideNav').querySelectorAll('button')];
+  navButtons.forEach((button, i) => {
+    button.classList.toggle('active', i === target);
+    if (i === target) button.setAttribute('aria-current', 'step'); else button.removeAttribute('aria-current');
+  });
+  g('progressText').textContent = `${target + 1} / ${sections.length}`;
+  g('progressFill').style.width = `${((target + 1) / sections.length) * 100}%`;
+  g('guideContent').scrollTop = 0;
+  if (g('guideModal').classList.contains('open')) navButtons[target]?.scrollIntoView?.({ block:'nearest', inline:'nearest' });
+  const heading = sections[target].querySelector('h3');
+  if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll:true }); }
+}
+setupGuideNavigation();
+goToSection(0);
+document.addEventListener('keydown', event => {
+  const modal = g('guideModal');
+  if (!modal.classList.contains('open')) return;
+  if (event.key === 'Escape') { closeGuide(); return; }
+  if (event.key !== 'Tab') return;
+  const focusable = [...modal.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter(element => element.getClientRects().length > 0);
+  if (!focusable.length) { event.preventDefault(); return; }
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
+try { applyTheme(localStorage.getItem('metodos-numericos-theme') || 'dark', false); } catch { applyTheme('dark', false); }
+
+/* ══════════════════════════════════════════
+   TABS
+══════════════════════════════════════════ */
+function switchTab(t) {
+  ['bis','sec'].forEach(n => {
+    g('tab-'+n).classList.toggle('active', n === t);
+    g('panel-'+n).classList.toggle('active', n === t);
+  });
+}
+
+/* ══════════════════════════════════════════
+   PARSER DE EXPRESIONES
+   Igual al de la app MAS — funciones primero,
+   constantes después para evitar corrupción de 'e' en sqrt
+══════════════════════════════════════════ */
+function parseExpr(str, varName, varVal) {
+  if (!str || str.trim() === '') return NaN;
+  str = str.toString().trim();
+
+  /* Menos unitario antes de sustituir la variable (para no perder el contexto) */
+  str = fixUnaryMinus(str);
+
+  /* Sustituir variable si se provee (acepta x o X) */
+  if (varName !== undefined && varVal !== undefined) {
+    const re = new RegExp(`(?<![a-zA-Z])${varName}(?![a-zA-Z])`, 'gi');
+    str = str.replace(re, `(${varVal})`);
+  }
+
+  /* 1. Funciones matemáticas primero */
+  str = str.replace(/sqrt\s*\(/gi,  'Math.sqrt(');
+  str = str.replace(/\bsin\s*\(/gi, 'Math.sin(');
+  str = str.replace(/\bcos\s*\(/gi, 'Math.cos(');
+  str = str.replace(/\btan\s*\(/gi, 'Math.tan(');
+  str = str.replace(/\babs\s*\(/gi, 'Math.abs(');
+  str = str.replace(/\bexp\s*\(/gi, 'Math.exp(');
+  str = str.replace(/\blog\s*\(/gi, 'Math.log10(');
+  str = str.replace(/\bln\s*\(/gi,  'Math.log(');
+
+  /* 2. Constantes después */
+  str = str.replace(/\bpi\b/gi, `(${Math.PI})`);
+  str = str.replace(/(?<![\w.])e(?![\w.])/g, `(${Math.E})`);
+
+  /* 3. Potencia */
+  str = str.replace(/\^/g, '**');
+
+  /* 4. Validación de seguridad */
+  const cleaned = str.replace(/Math\.[a-z0-9]+/gi, 'M');
+  if (!/^[\d\s\+\-\*\/\.\(\)MeE]+$/.test(cleaned)) return NaN;
+
+  try {
+    const result = Function('"use strict"; return (' + str + ')')();
+    if (typeof result !== 'number' || !isFinite(result)) return NaN;
+    return result;
+  } catch { return NaN; }
+}
+
+/* ══════════════════════════════════════════
+   MENOS UNITARIO
+   JavaScript rechaza "-2**2" (error de sintaxis), así que un menos
+   delante de una potencia se reescribe como (-1)* para conservar
+   el signo matemático: -x^2 → -(x^2), 3*-x^2 → -3·x^2
+   ══════════════════════════════════════════ */
+function fixUnaryMinus(str) {
+  /* Al inicio de la expresión: -x^2, -2^2, -(x+1)^2 */
+  str = str.replace(/^\s*-\s*/, '(-1)*');
+  /* División por un término negativo: 1/-x^2 → 1*(0-1)/x^2, equivalente a 1/(-(x^2)) */
+  str = str.replace(/\/\s*-\s*(?=[\dA-Za-z_(])/g, '*(0-1)/');
+  /* Tras +, -, *, o al abrir un paréntesis: (-x^2), (x+1)*(-x^2+4).
+     En estos contextos "(-1)*" equivale al menos unitario. El "/" ya se
+     resolvió arriba con otra equivalencia; tampoco se tocan los "**" de
+     2^-3 ni el "e" de 1e-3. */
+  str = str.replace(/(^|[+\-\(]|(?<!\*)\*)\s*-\s*(?=[\dA-Za-z_])/g, (m, ctx) => ctx + '(-1)*');
+  return str;
+}
+
+/* Evalúa f(x) con un valor numérico */
+function evalFx(fxStr, xVal) {
+  return parseExpr(fxStr, 'x', xVal);
+}
+
+function approximatePercentError(current, previous) {
+  if (previous === null) return null;
+  if (previous === 0) return current === 0 ? 0 : Infinity;
+  return Math.abs((current - previous) / Math.abs(previous)) * 100;
+}
+function truePercentError(trueRoot, approximation) {
+  if (trueRoot === null) return null;
+  if (trueRoot === 0) return approximation === 0 ? 0 : Infinity;
+  return Math.abs((trueRoot - approximation) / Math.abs(trueRoot)) * 100;
+}
+function fmtPercent(value) {
+  if (value === null || !isFinite(value)) return '—';
+  return `${fmt(value, 4)}%`;
+}
+
+function renderBisectionFunctionTable(fxStr, xi, xf) {
+  const lower = Math.min(xi, xf);
+  const upper = Math.max(xi, xf);
+  const divisions = lower === upper ? 0 : 10;
+  const tbody = g('bis-values-tbody');
+  tbody.innerHTML = '';
+  for (let index = 0; index <= divisions; index++) {
+    const x = divisions === 0 ? lower : lower + (upper - lower) * index / divisions;
+    const fx = evalFx(fxStr, x);
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${fmt(x, 6)}</td><td>${fmtPercentValue(fx)}</td>`;
+    tbody.appendChild(row);
+  }
+  g('bis-values-empty').style.display = 'none';
+  g('bis-values-area').style.display = 'block';
+}
+
+function fmtPercentValue(value) {
+  return isFinite(value) ? fmt(value, 6) : 'No definida';
+}
+
+function showBisectionEndpoint(fxStr, a, b, root, value, trueRoot) {
+  const et = truePercentError(trueRoot, root);
+  g('bis-empty').style.display = 'none';
+  g('bis-result').style.display = 'block';
+  g('bis-root').textContent = fmt(root);
+  g('bis-fx-val').textContent = fmt(value);
+  g('bis-err').textContent = '—';
+  g('bis-et').textContent = fmtPercent(et);
+  g('bis-iters').textContent = '0';
+  g('bis-status').textContent = '✅ Convergió (raíz en el extremo)';
+  g('bis-status').style.color = 'var(--acc)';
+  g('bis-table-empty').style.display = 'none';
+  g('bis-table-area').style.display = 'block';
+  g('bis-tbody').innerHTML = `<tr class="convergido"><td>0</td><td>${fmt(a,6)}</td><td>${fmt(b,6)}</td><td><strong>${fmt(root,8)}</strong></td><td>${fmt(evalFx(fxStr,a),6)}</td><td>${fmt(evalFx(fxStr,b),6)}</td><td>${fmt(value,6)}</td><td>${fmtPercent(et)}</td><td>—</td></tr>`;
+  renderBisectionFunctionTable(fxStr, a, b);
+  const margin = Math.max(Math.abs(b-a)*.3, 1);
+  g('bis-chart-empty').style.display = 'none';
+  g('bis-chart-area').style.display = 'block';
+  buildChart('bis-chart', fxStr, Math.min(a,b)-margin, Math.max(a,b)+margin, root, [{x:root}]);
+}
+
+/* ══════════════════════════════════════════
+   PREVIEW EN TIEMPO REAL (para inputs)
+══════════════════════════════════════════ */
+function prevExpr(inputEl, previewId, varName) {
+  const raw = inputEl.value.trim();
+  const pv  = g(previewId);
+  if (!raw) { pv.textContent = ''; pv.className = 'expr-prev'; inputEl.className = ''; return; }
+
+  /* Si tiene variable 'x', validar sin depender de x = 0 */
+  if (varName === 'x') {
+    /* La función puede no estar definida en x = 0 (ln(x), 1/x, sqrt(x-1)...),
+       así que se prueba en varios puntos antes de marcarla como inválida */
+    const tests = [0, 1, -1, 0.5, -0.5, 2, -2];
+    if (!tests.some(t => isFinite(parseExpr(raw, 'x', t)))) {
+      pv.textContent = '⚠ Expresión inválida';
+      pv.className = 'expr-prev err';
+      inputEl.className = 'err';
+    } else {
+      const at0 = parseExpr(raw, 'x', 0);
+      pv.textContent = isFinite(at0) ? `✓ f(0) = ${fmt(at0)}` : '✓ Expresión válida';
+      pv.className = 'expr-prev ok';
+      inputEl.className = 'ok';
+    }
+    return;
+  }
+
+  /* Sin variable: evaluar directo */
+  const val = parseExpr(raw);
+  if (isNaN(val)) {
+    pv.textContent = '⚠ Valor inválido';
+    pv.className = 'expr-prev err';
+    inputEl.className = 'err';
+  } else {
+    const isPlain = /^-?\d+(\.\d+)?$/.test(raw);
+    pv.textContent = isPlain ? '' : `= ${fmt(val)}`;
+    pv.className = isPlain ? 'expr-prev' : 'expr-prev ok';
+    inputEl.className = 'ok';
+  }
+}
+
+/* ══════════════════════════════════════════
+   FORMATO NUMÉRICO
+══════════════════════════════════════════ */
+function fmt(n, d = 8) {
+  if (!isFinite(n)) return 'Indef.';
+  if (n === 0) return '0';
+  const abs = Math.abs(n);
+  if (abs >= 1e10 || (abs < 1e-6 && abs > 0)) return n.toExponential(4);
+  return parseFloat(n.toFixed(d)).toString();
+}
+
+function fmtShort(n) {
+  if (!isFinite(n)) return 'Indef.';
+  if (n === 0) return '0';
+  const abs = Math.abs(n);
+  if (abs >= 1e8 || (abs < 1e-5 && abs > 0)) return n.toExponential(3);
+  return parseFloat(n.toFixed(6)).toString();
+}
+
+/* ══════════════════════════════════════════
+   GRÁFICA — función genérica
+══════════════════════════════════════════ */
+function buildChart(canvasId, fxStr, xMin, xMax, rootVal, points) {
+  const canvas = g(canvasId);
+  const ctx    = canvas.getContext('2d');
+  const lightTheme = document.documentElement.dataset.theme === 'light';
+  const chartText = lightTheme ? '#526174' : '#b0bdca';
+  const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const chartPalette = {
+    bis: themeToken('--chart-bis'), sec: themeToken('--chart-sec'),
+    red: themeToken('--red'), iter: themeToken('--chart-iter')
+  };
+
+  /* Destruir gráfica anterior si existe */
+  if (canvasId === 'bis-chart' && bisChart) { bisChart.destroy(); bisChart = null; }
+  if (canvasId === 'sec-chart' && secChart) { secChart.destroy(); secChart = null; }
+
+  /* Generar puntos de la curva f(x) */
+  const N    = 300;
+  const step = (xMax - xMin) / N;
+  const curveData = [];
+  for (let i = 0; i <= N; i++) {
+    const xi = xMin + step * i;
+    const yi = evalFx(fxStr, xi);
+    if (isFinite(yi)) curveData.push({ x: xi, y: yi });
+  }
+
+  /* Puntos iteraciones */
+  const iterPoints = points.map(p => ({ x: p.x, y: evalFx(fxStr, p.x) }));
+
+  const datasets = [
+    /* Curva f(x) */
+    {
+      label: 'f(x)',
+      data: curveData,
+      borderColor: chartPalette[canvasId === 'sec-chart' ? 'sec' : 'bis'],
+      backgroundColor: lightTheme ? 'rgba(15,118,110,.06)' : 'rgba(40,184,166,.07)',
+      borderWidth: 2.2, pointRadius: 0,
+      fill: false, tension: 0.4, showLine: true
+    },
+    /* Línea y = 0 */
+    {
+      label: 'y = 0',
+      data: [{ x: xMin, y: 0 }, { x: xMax, y: 0 }],
+      borderColor: lightTheme ? 'rgba(23,32,51,.24)' : 'rgba(226,232,240,.18)',
+      borderWidth: 1, pointRadius: 0,
+      fill: false, showLine: true,
+      borderDash: [4, 4]
+    },
+    /* Raíz encontrada */
+    {
+      label: `x* = ${fmtShort(rootVal)}`,
+      data: [{ x: rootVal, y: 0 }],
+      borderColor: chartPalette.red,
+      backgroundColor: chartPalette.red,
+      pointRadius: 7, pointHoverRadius: 9,
+      showLine: false, borderWidth: 2
+    },
+    /* Puntos de iteración */
+    {
+      label: 'Iteraciones',
+      data: iterPoints,
+      borderColor: chartPalette.iter,
+      backgroundColor: lightTheme ? 'rgba(154,91,8,.45)' : 'rgba(228,173,55,.45)',
+      pointRadius: 3, pointHoverRadius: 5,
+      showLine: false, borderWidth: 1
+    }
+  ];
+
+  /* Calcular rango Y razonable */
+  const yVals  = curveData.map(p => p.y).filter(isFinite);
+  const yMin   = Math.min(...yVals);
+  const yMax2  = Math.max(...yVals);
+  const yRange = Math.max(Math.abs(yMax2), Math.abs(yMin), 1);
+
+  const chart = new Chart(ctx, {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: prefersReducedMotion ? 0 : 300 },
+      interaction: { mode: 'nearest', intersect: false, axis: 'x' },
+      plugins: {
+        legend: {
+          labels: {
+            color: chartText,
+            font: { family: 'Space Mono', size: 10 },
+            boxWidth: 14, padding: 8,
+            filter: item => item.text !== 'y = 0'
+          }
+        },
+        tooltip: {
+          backgroundColor: lightTheme ? '#ffffff' : '#0d1320',
+          borderColor: lightTheme ? 'rgba(15,23,42,0.16)' : 'rgba(255,255,255,0.08)', borderWidth: 1,
+          titleColor: lightTheme ? '#475569' : '#94a3b8', bodyColor: lightTheme ? '#172033' : '#e2e8f0',
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 }, padding: 10,
+          callbacks: {
+            title: items => `x = ${fmt(items[0].raw?.x, 6)}`,
+            label: item  => {
+              const y = item.raw?.y;
+              if (y === undefined) return null;
+              return `${item.dataset.label}: ${fmt(y, 6)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear', min: xMin, max: xMax,
+          ticks: { color: chartText, font: { family: 'Space Mono', size: 10 }, maxTicksLimit: 8,
+                   callback: v => parseFloat(v.toFixed(3)) },
+          grid: { color: lightTheme ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.04)' },
+          title: { display: true, text: 'x', color: chartText, font: { family: 'Outfit', size: 11, weight: '600' } }
+        },
+        y: {
+          type: 'linear',
+          min: -yRange * 1.15, max: yRange * 1.15,
+          ticks: { color: chartText, font: { family: 'Space Mono', size: 10 }, maxTicksLimit: 7,
+                   callback: v => parseFloat(v.toFixed(3)) },
+          grid: { color: lightTheme ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.05)' },
+          title: { display: true, text: 'f(x)', color: chartText, font: { family: 'Outfit', size: 11, weight: '600' } }
+        }
+      }
+    }
+  });
+
+  if (canvasId === 'bis-chart') bisChart = chart;
+  if (canvasId === 'sec-chart') secChart = chart;
+
+  /* Accesibilidad: describe la gráfica para lectores de pantalla */
+  canvas.setAttribute('aria-label',
+    `Gráfica de f(x). Raíz aproximada x* = ${fmtShort(rootVal)} en el eje y = 0. ` +
+    `La curva corta el eje horizontal en ${fmtShort(rootVal)}.`);
+}
+
+/* ══════════════════════════════════════════
+   MÉTODO DE BISECCIÓN
+══════════════════════════════════════════ */
+/* Limpieza de salida: resultado, tablas y gráfica de cada método */
+function clearBisectionOutput() {
+  g('bis-empty').style.display        = '';
+  g('bis-result').style.display       = 'none';
+  g('bis-table-empty').style.display  = '';
+  g('bis-table-area').style.display   = 'none';
+  g('bis-values-empty').style.display = '';
+  g('bis-values-area').style.display  = 'none';
+  g('bis-chart-empty').style.display  = '';
+  g('bis-chart-area').style.display   = 'none';
+  g('bis-tbody').innerHTML = '';
+  g('bis-values-tbody').innerHTML = '';
+  if (bisChart) { bisChart.destroy(); bisChart = null; }
+}
+
+function clearSecanteOutput() {
+  g('sec-empty').style.display        = '';
+  g('sec-result').style.display       = 'none';
+  g('sec-table-empty').style.display  = '';
+  g('sec-table-area').style.display   = 'none';
+  g('sec-chart-empty').style.display  = '';
+  g('sec-chart-area').style.display   = 'none';
+  g('sec-tbody').innerHTML = '';
+  if (secChart) { secChart.destroy(); secChart = null; }
+}
+
+/* Si una validación falla se borra la salida anterior: así nunca se ven
+   resultados viejos de un cálculo que no llegó a ejecutarse */
+function failBisection(message) { clearBisectionOutput(); alert(message); }
+function failSecante(message)  { clearSecanteOutput();  alert(message); }
+
+function updateBisectionErrorMode() {
+  const mode = g('bis-error-mode').value;
+  const usesTrueError = mode === 'et';
+  g('bis-tol-mode-label').textContent = `${usesTrueError ? 'Et' : 'Ea'} %`;
+  g('bis-true-root-label').textContent = `Raíz verdadera (${usesTrueError ? 'obligatoria para Et' : 'opcional'})`;
+  g('bis-true-root').setAttribute('aria-required', String(usesTrueError));
+  g('bis-error-mode-help').textContent = usesTrueError
+    ? 'Et compara cada punto medio con la raíz verdadera y controla la parada.'
+    : 'Ea compara dos puntos medios consecutivos; no se calcula en la primera iteración.';
+  g('bis-true-root-help').textContent = usesTrueError
+    ? 'Ingresa la raíz verdadera proporcionada por el ejercicio. Si no la conoces, selecciona Ea.'
+    : 'Es opcional; si el ejercicio la proporciona, Et aparecerá en los resultados y la tabla.';
+}
+
+function runBiseccion() {
+  const fxStr = g('bis-fx').value.trim();
+  const xi0   = parseExpr(g('bis-a').value);
+  const xf0   = parseExpr(g('bis-b').value);
+  const trueRootInput = g('bis-true-root').value.trim();
+  const trueRoot = trueRootInput ? parseExpr(trueRootInput) : null;
+  const errorMode = g('bis-error-mode').value;
+  const tol   = parseExpr(g('bis-tol').value);
+  const maxN  = Math.round(parseExpr(g('bis-max').value));
+
+  if (!fxStr) { failBisection('Ingresa la función f(x).'); return; }
+  if (!isFinite(xi0) || !isFinite(xf0)) { failBisection('Los valores de xi y xf deben ser números válidos.'); return; }
+  if (trueRootInput && !isFinite(trueRoot)) { failBisection('La raíz verdadera de referencia debe ser un número válido.'); return; }
+  if (errorMode === 'et' && !trueRootInput) { failBisection('Para controlar la tolerancia con Et, ingresa la raíz verdadera o selecciona Ea.'); g('bis-true-root').focus(); return; }
+  if (!isFinite(tol) || tol <= 0) { failBisection('La tolerancia porcentual debe ser positiva.'); return; }
+  if (!isFinite(maxN) || maxN < 1) { failBisection('El máximo de iteraciones debe ser un entero positivo.'); return; }
+  if (maxN > MAX_ITERACIONES) { failBisection(`El máximo de iteraciones no puede superar ${MAX_ITERACIONES}.`); return; }
+  const fxi0 = evalFx(fxStr, xi0);
+  const fxf0 = evalFx(fxStr, xf0);
+  if (!isFinite(fxi0) || !isFinite(fxf0)) { failBisection('La función no está definida en [xi, xf].'); return; }
+  if (Math.abs(fxi0) < 1e-14 || Math.abs(fxf0) < 1e-14) {
+    const root = Math.abs(fxi0) < 1e-14 ? xi0 : xf0;
+    const value = Math.abs(fxi0) < 1e-14 ? fxi0 : fxf0;
+    showBisectionEndpoint(fxStr, xi0, xf0, root, value, trueRoot);
+    return;
+  }
+  if (errorMode === 'et' && trueRoot === 0) { failBisection('Et porcentual no se define si la raíz verdadera es 0. Selecciona Ea para controlar la tolerancia.'); return; }
+  if (fxi0 * fxf0 > 0) {
+    failBisection(`f(xi) = ${fmtShort(fxi0)} y f(xf) = ${fmtShort(fxf0)} tienen el mismo signo. Bisección requiere f(xi)·f(xf) < 0.`);
+    return;
+  }
+
+  let xi = xi0, xf = xf0, xr = xi0, fxr = fxi0, ea = null, et = null, n = 0;
+  let previousXr = null;
+  let convergio = false;
+  const rows = [];
+  const iPoints = [];
+
+  while (n < maxN) {
+    n++;
+    xr = (xi + xf) / 2;
+    const fxi = evalFx(fxStr, xi);
+    const fxf = evalFx(fxStr, xf);
+    fxr = evalFx(fxStr, xr);
+    if (!isFinite(fxr)) { failBisection(`La función no está definida en xr = ${fmt(xr)}.`); return; }
+
+    ea = approximatePercentError(xr, previousXr);
+    et = truePercentError(trueRoot, xr);
+    rows.push({ n, xi, xf, xr, fxi, fxf, fxr, et, ea });
+    iPoints.push({ x: xr });
+
+    const signProduct = fxi * fxr;
+    const exactRoot = Math.abs(fxr) < 1e-14;
+    if (!exactRoot) {
+      if (signProduct < 0) xf = xr;
+      else if (signProduct > 0) xi = xr;
+    }
+    previousXr = xr;
+    const selectedError = errorMode === 'et' ? et : ea;
+    if (exactRoot || (selectedError !== null && selectedError < tol)) { convergio = true; break; }
+  }
+
+  g('bis-empty').style.display = 'none';
+  g('bis-result').style.display = 'block';
+  g('bis-root').textContent = fmt(xr);
+  g('bis-fx-val').textContent = fmt(fxr);
+  g('bis-err').textContent = fmtPercent(ea);
+  g('bis-et').textContent = fmtPercent(et);
+  g('bis-iters').textContent = n;
+  g('bis-status').textContent = convergio ? '✅ Convergió' : '⚠️ Máx. iteraciones alcanzado';
+  g('bis-status').style.color = convergio ? 'var(--acc)' : 'var(--yel)';
+
+  g('bis-table-empty').style.display = 'none';
+  g('bis-table-area').style.display = 'block';
+  renderBisectionFunctionTable(fxStr, xi0, xf0);
+  const tbody = g('bis-tbody');
+  tbody.innerHTML = '';
+  rows.forEach((r, idx) => {
+    const tr = document.createElement('tr');
+    if (idx === rows.length - 1 && convergio) tr.className = 'convergido';
+    tr.innerHTML = `<td>${r.n}</td><td>${fmt(r.xi,6)}</td><td>${fmt(r.xf,6)}</td><td><strong>${fmt(r.xr,8)}</strong></td><td>${fmt(r.fxi,6)}</td><td>${fmt(r.fxf,6)}</td><td>${fmt(r.fxr,6)}</td><td>${fmtPercent(r.et)}</td><td>${fmtPercent(r.ea)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const margin = Math.abs(xf0 - xi0) * 0.3;
+  g('bis-chart-empty').style.display = 'none';
+  g('bis-chart-area').style.display = 'block';
+  buildChart('bis-chart', fxStr, Math.min(xi0,xf0) - margin, Math.max(xi0,xf0) + margin, xr, iPoints);
+}
+/* ══════════════════════════════════════════
+   RESET BISECCIÓN
+══════════════════════════════════════════ */
+function resetBiseccion() {
+  ['bis-fx','bis-a','bis-b'].forEach(id => { g(id).value = ''; g(id).className = ''; });
+  g('bis-true-root').value = ''; g('bis-true-root').className = '';
+  g('bis-error-mode').value = 'ea';
+  updateBisectionErrorMode();
+  g('bis-tol').value = '0.7'; g('bis-tol').className = '';
+  g('bis-max').value = '100';    g('bis-max').className = '';
+  ['bis-fx-pv','bis-a-pv','bis-b-pv','bis-true-root-pv','bis-tol-pv','bis-max-pv']
+    .forEach(id => { g(id).textContent = ''; g(id).className = 'expr-prev'; });
+
+  clearBisectionOutput();
+}
+
+/* ══════════════════════════════════════════
+   MÉTODO DE LA SECANTE
+══════════════════════════════════════════ */
+function runSecante() {
+  const fxStr = g('sec-fx').value.trim();
+  const x0    = parseExpr(g('sec-x0').value);
+  const x1    = parseExpr(g('sec-x1').value);
+  const tol   = parseExpr(g('sec-tol').value);
+  const maxN  = Math.round(parseExpr(g('sec-max').value));
+
+  if (!fxStr) { failSecante('Ingresa la función f(x).'); return; }
+  if (isNaN(x0) || isNaN(x1)) { failSecante('Los valores x₀ y x₁ deben ser números válidos.'); return; }
+  if (isNaN(tol) || tol <= 0) { failSecante('La tolerancia debe ser un número positivo.'); return; }
+  if (isNaN(maxN) || maxN < 1){ failSecante('El máximo de iteraciones debe ser un entero positivo.'); return; }
+  if (maxN > MAX_ITERACIONES) { failSecante(`El máximo de iteraciones no puede superar ${MAX_ITERACIONES}.`); return; }
+  if (x0 === x1) { failSecante('x₀ y x₁ no pueden ser iguales.'); return; }
+
+  const f0 = evalFx(fxStr, x0);
+  const f1 = evalFx(fxStr, x1);
+  if (!isFinite(f0) || !isFinite(f1)) { failSecante('La función no está definida en x₀ o x₁.'); return; }
+
+  /* Algoritmo */
+  let xA = x0, xB = x1;
+  let fA = f0, fB = f1;
+  const rows    = [];
+  const iPoints = [];
+  let xC = xB, fC = fB, err = Infinity, n = 0;
+  let convergio = false;
+
+  while (n < maxN) {
+    n++;
+
+    const denom = fB - fA;
+    if (Math.abs(denom) < 1e-14) {
+      failSecante(`En la iteración ${n}: f(x₁) - f(x₀) ≈ 0. El método diverge (división entre cero).\nPrueba con otros valores iniciales.`);
+      return;
+    }
+
+    xC  = xB - fB * (xB - xA) / denom;
+    fC  = evalFx(fxStr, xC);
+    err = Math.abs((xC - xB) / xC) * 100;
+
+    rows.push({ n, xA, xB, xC, fA, fB, fC, err });
+    iPoints.push({ x: xC });
+
+    if (!isFinite(fC)) {
+      failSecante(`f(x₂) no es finita en la iteración ${n}. El método diverge.`);
+      return;
+    }
+
+    if (err < tol || Math.abs(fC) < 1e-14) { convergio = true; break; }
+
+    xA = xB; fA = fB;
+    xB = xC; fB = fC;
+  }
+
+  /* Resultado */
+  g('sec-empty').style.display  = 'none';
+  g('sec-result').style.display = 'block';
+  g('sec-root').textContent    = fmt(xC);
+  g('sec-fx-val').textContent  = fmt(fC);
+  g('sec-err').textContent     = fmtPercent(err);
+  g('sec-iters').textContent   = n;
+  g('sec-status').textContent  = convergio ? '✅ Convergió' : '⚠️ Máx. iteraciones alcanzado';
+  g('sec-status').style.color  = convergio ? 'var(--acc)' : 'var(--yel)';
+
+  /* Tabla */
+  g('sec-table-empty').style.display = 'none';
+  g('sec-table-area').style.display  = 'block';
+  const tbody = g('sec-tbody');
+  tbody.innerHTML = '';
+  rows.forEach((r, idx) => {
+    const tr = document.createElement('tr');
+    if (idx === rows.length - 1 && convergio) tr.className = 'convergido';
+    tr.innerHTML = `
+      <td>${r.n}</td>
+      <td>${fmt(r.xA,6)}</td>
+      <td>${fmt(r.xB,6)}</td>
+      <td><strong>${fmt(r.xC,8)}</strong></td>
+      <td>${fmt(r.fA,6)}</td>
+      <td>${fmt(r.fB,6)}</td>
+      <td>${fmt(r.fC,6)}</td>
+      <td>${fmtPercent(r.err)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  /* Gráfica */
+  const allX  = [x0, x1, xC, ...iPoints.map(p => p.x)].filter(isFinite);
+  const span  = Math.max(Math.abs(xC - x0), Math.abs(xC - x1), 2);
+  const xMin  = Math.min(...allX) - span * 0.4;
+  const xMax2 = Math.max(...allX) + span * 0.4;
+  g('sec-chart-empty').style.display = 'none';
+  g('sec-chart-area').style.display  = 'block';
+  buildChart('sec-chart', fxStr, xMin, xMax2, xC, iPoints);
+}
+
+/* ══════════════════════════════════════════
+   RESET SECANTE
+══════════════════════════════════════════ */
+function resetSecante() {
+  ['sec-fx','sec-x0','sec-x1'].forEach(id => { g(id).value = ''; g(id).className = ''; });
+  g('sec-tol').value = '0.1'; g('sec-tol').className = '';
+  g('sec-max').value = '100';    g('sec-max').className = '';
+  ['sec-fx-pv','sec-x0-pv','sec-x1-pv','sec-tol-pv','sec-max-pv']
+    .forEach(id => { g(id).textContent = ''; g(id).className = 'expr-prev'; });
+
+  clearSecanteOutput();
+}
+</script>
+</body>
+</html>
